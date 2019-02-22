@@ -4,10 +4,12 @@ const Menu = () => {
   return (
     <div className="menu nes-container is-rounded">
       <h1 className="title">Guess My Drawing!</h1>
-      <button type="button" className=" option nes-btn is-primary">
-        Create Room
-      </button>
-      <Link href="/lobby">
+      <Link href="/room" prefetch>
+        <button type="button" className=" option nes-btn is-primary">
+          Create Room
+        </button>
+      </Link>
+      <Link href="/lobby" prefetch>
         <a className="option nes-btn is-primary">Join Room</a>
       </Link>
       <style jsx>{`
