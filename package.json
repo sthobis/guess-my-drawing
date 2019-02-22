@@ -1,0 +1,15 @@
+{
+  "name": "guess-my-drawing",
+  "version": "0.0.1",
+  "author": "S Thobi Sinaga <s.thobi.sinaga@gmail.com>",
+  "description": "guess my drawing is a multiplayer web game where players guess other player's drawing",
+  "scripts": {
+    "dev": "next",
+    "now-build": "next build && next export -o dist"
+  },
+  "dependencies": {
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  }
+}
