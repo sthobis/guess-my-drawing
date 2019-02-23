@@ -1,8 +1,8 @@
+import PropTypes from "prop-types";
 import { useEffect, useRef, useState } from "react";
 import useMousePosition from "../lib/useMousePosition";
 
-const Canvas = () => {
-  const canvasRef = useRef();
+const Canvas = ({ canvasRef, broadcastDrawing }) => {
   const mouse = useMousePosition(canvasRef);
   const prevMouse = useRef(null);
 
@@ -21,14 +21,19 @@ const Canvas = () => {
     }
   });
 
-  useEffect(() => {
+  const resizeCanvas = () => {
     canvasRef.current.width = canvasRef.current.getBoundingClientRect().width;
     canvasRef.current.height = canvasRef.current.getBoundingClientRect().height;
+  };
+  useEffect(() => {
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas);
+    return () => window.removeEventListener("resize", resizeCanvas);
   }, []);
+
   const drawCanvas = () => {
     const ctx = canvasRef.current.getContext("2d");
     ctx.fillStyle = "#000";
-    console.log(prevMouse.current);
     if (prevMouse.current) {
       ctx.beginPath();
       ctx.moveTo(prevMouse.current.x, prevMouse.current.y);
@@ -38,6 +43,7 @@ const Canvas = () => {
     } else {
       ctx.fillRect(mouse.x, mouse.y, 1, 1);
     }
+    broadcastDrawing({ mouse, prevMouse });
     prevMouse.current = mouse;
   };
 
@@ -63,6 +69,10 @@ const Canvas = () => {
       `}</style>
     </>
   );
+};
+
+Canvas.propTypes = {
+  broadcastDrawing: PropTypes.func.isRequired
 };
 
 export default Canvas;

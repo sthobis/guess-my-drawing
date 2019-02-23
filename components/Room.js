@@ -13,6 +13,7 @@ const EVENT = {
   CLIENT_JOIN_ROOM: "client_join_room",
   CLIENT_LEAVE_ROOM: "client_leave_room",
   CLIENT_SUBMIT_ANSWER: "client_submit_answer",
+  CLIENT_UPDATE_DRAWING: "client_update_drawing",
   SERVER_JOIN_ERROR: "server_join_error",
   SERVER_UPDATE_PLAYER_LIST: "server_update_player_list",
   SERVER_NEW_ANSWER: "server_new_answer"
@@ -20,6 +21,7 @@ const EVENT = {
 
 const Room = ({ username }) => {
   const socketRef = useRef();
+  const canvasRef = useRef();
 
   const [player, setPlayer] = useState({
     id: uuidv4(),
@@ -37,6 +39,7 @@ const Room = ({ username }) => {
     socket.on(EVENT.SERVER_JOIN_ERROR, handleError);
     socket.on(EVENT.SERVER_UPDATE_PLAYER_LIST, updatePlayerList);
     socket.on(EVENT.SERVER_NEW_ANSWER, popNewAnswer);
+    socket.on(EVENT.CLIENT_UPDATE_DRAWING, updateDrawing);
     socketRef.current = socket;
 
     return () => socket.close();
@@ -71,25 +74,51 @@ const Room = ({ username }) => {
     setAnswer("");
   };
 
+  const broadcastDrawing = payload => {
+    socketRef.current.emit(EVENT.CLIENT_UPDATE_DRAWING, payload);
+  };
+
+  const updateDrawing = ({ mouse, prevMouse }) => {
+    const ctx = canvasRef.current.getContext("2d");
+    ctx.fillStyle = "#000";
+    if (prevMouse.current) {
+      ctx.beginPath();
+      ctx.moveTo(prevMouse.current.x, prevMouse.current.y);
+      ctx.lineTo(mouse.x, mouse.y);
+      ctx.stroke();
+      ctx.closePath();
+    } else {
+      ctx.fillRect(mouse.x, mouse.y, 1, 1);
+    }
+    prevMouse.current = mouse;
+  };
+
   return (
     <div className="room nes-container is-rounded">
-      <div className="player">P1</div>
-      <div className="player">P2</div>
-      <div className="player">P3</div>
-      <div className="player">P4</div>
-      <div className="player">P5</div>
-      <div className="player">P6</div>
-      <div className="player">P7</div>
-      <div className="player">P8</div>
+      {playerList.map((p, i) => {
+        if (!p) {
+          return (
+            <div key={i} className="player">
+              empty
+            </div>
+          );
+        } else {
+          return (
+            <div key={i} className="player">
+              {p.username}
+            </div>
+          );
+        }
+      })}
       <div className="canvas-container">
-        <Canvas />
+        <Canvas canvasRef={canvasRef} broadcastDrawing={broadcastDrawing} />
       </div>
-      <form onSubmit={submitAnswer}>
+      <form className="input-form" onSubmit={submitAnswer}>
         <div className="input-box nes-field">
           <input
             type="text"
             id="username"
-            className="nes-input"
+            className="input nes-input"
             value={answer}
             onChange={e => setAnswer(e.target.value.trim())}
           />
@@ -100,11 +129,12 @@ const Room = ({ username }) => {
         .room {
           display: grid;
           grid-template-columns: 300px auto 300px;
-          grid-template-rows: 1fr 1fr 1fr 1fr 100px;
+          grid-template-rows: 1fr 1fr 1fr 1fr 70px;
           grid-template-areas: "p1 canvas p2" "p3 canvas p4" "p5 canvas p6" "p7 canvas p8" "input input input";
-          width: calc(100vw - 100px);
-          height: calc(100vh - 100px);
-          margin: 50px;
+          width: calc(100vw - 60px);
+          height: calc(100vh - 60px);
+          margin: 30px;
+          padding: 20px;
         }
 
         .player:nth-child(1) {
@@ -144,8 +174,16 @@ const Room = ({ username }) => {
           position: relative;
         }
 
-        .input-box {
+        .input-form {
           grid-area: input;
+          display: flex;
+          justify-content: stretch;
+          align-items: flex-end;
+        }
+
+        .input-box {
+          display: flex;
+          width: 100%;
         }
       `}</style>
     </div>
