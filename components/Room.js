@@ -1,7 +1,6 @@
-import { useRef } from "react";
+import Canvas from "./Canvas";
 
 const Room = () => {
-  const canvasRef = useRef();
   return (
     <div className="room nes-container is-rounded">
       <div className="player">P1</div>
@@ -13,7 +12,7 @@ const Room = () => {
       <div className="player">P7</div>
       <div className="player">P8</div>
       <div className="canvas-container">
-        <canvas ref={canvasRef} />
+        <Canvas />
       </div>
       <style jsx>{`
         .room {
@@ -60,6 +59,7 @@ const Room = () => {
 
         .canvas-container {
           grid-area: canvas;
+          position: relative;
         }
       `}</style>
     </div>
