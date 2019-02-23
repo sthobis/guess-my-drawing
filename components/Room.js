@@ -1,6 +1,7 @@
 import PropTypes from "prop-types";
 import { useEffect, useRef, useState } from "react";
 import io from "socket.io-client";
+import { useImmer } from "use-immer";
 import uuidv4 from "uuid/v4";
 import Canvas from "./Canvas";
 
@@ -19,34 +20,47 @@ const EVENT = {
   SERVER_NEW_ANSWER: "server_new_answer"
 };
 
+const url =
+  process.env.NODE_ENV === "development"
+    ? "http://localhost:3004"
+    : "https://gmd.duajarimanis.com";
+const socket = io(url);
+const id = uuidv4();
+
 const Room = ({ username }) => {
-  const socketRef = useRef();
   const canvasRef = useRef();
 
-  const [player, setPlayer] = useState({
-    id: uuidv4(),
+  const player = {
+    id,
     username
-  });
+  };
 
   useEffect(() => {
-    const url =
-      process.env.NODE_ENV === "development"
-        ? "http://localhost:3004"
-        : "https://gmd.duajarimanis.com";
-    const socket = io(url);
+    joinRoom();
+    return () => {
+      socket.close();
+    };
+  }, []);
+  useEffect(() => {
     socket.on(EVENT.CONNECT, joinRoom);
     socket.on(EVENT.CONNECT_ERROR, handleError);
     socket.on(EVENT.SERVER_JOIN_ERROR, handleError);
     socket.on(EVENT.SERVER_UPDATE_PLAYER_LIST, updatePlayerList);
     socket.on(EVENT.SERVER_NEW_ANSWER, popNewAnswer);
     socket.on(EVENT.CLIENT_UPDATE_DRAWING, updateDrawing);
-    socketRef.current = socket;
 
-    return () => socket.close();
-  }, []);
+    return () => {
+      socket.off(EVENT.CONNECT, joinRoom);
+      socket.off(EVENT.CONNECT_ERROR, handleError);
+      socket.off(EVENT.SERVER_JOIN_ERROR, handleError);
+      socket.off(EVENT.SERVER_UPDATE_PLAYER_LIST, updatePlayerList);
+      socket.off(EVENT.SERVER_NEW_ANSWER, popNewAnswer);
+      socket.off(EVENT.CLIENT_UPDATE_DRAWING, updateDrawing);
+    };
+  });
 
   const joinRoom = () => {
-    socketRef.current.emit(EVENT.CLIENT_JOIN_ROOM, player, updatePlayerList);
+    socket.emit(EVENT.CLIENT_JOIN_ROOM, player, updatePlayerList);
   };
 
   const [playerList, setPlayerList] = useState(Array(8).fill(null));
@@ -54,28 +68,41 @@ const Room = ({ username }) => {
     setPlayerList(players);
   };
 
+  const [answerList, setAnswerList] = useImmer(Array(8).fill(null));
+  const popNewAnswer = payload => {
+    const playerIndex = playerList.findIndex(
+      p => p && p.id === payload.player.id
+    );
+    setAnswerList(draft => {
+      draft[playerIndex] = payload.message;
+    });
+    setTimeout(() => {
+      setAnswerList(draft => {
+        draft[playerIndex] = null;
+      });
+    }, 3000);
+  };
+
   const handleError = err => {
     console.log(err);
     alert(err);
-    socketRef.current.close();
-  };
-
-  const popNewAnswer = payload => {
-    console.log(payload);
+    socket.close();
   };
 
   const [answer, setAnswer] = useState("");
   const submitAnswer = e => {
     e.preventDefault();
-    socketRef.current.emit(EVENT.CLIENT_SUBMIT_ANSWER, {
+    const payload = {
       player,
       message: answer
-    });
+    };
+    socket.emit(EVENT.CLIENT_SUBMIT_ANSWER, payload);
+    popNewAnswer(payload);
     setAnswer("");
   };
 
   const broadcastDrawing = payload => {
-    socketRef.current.emit(EVENT.CLIENT_UPDATE_DRAWING, payload);
+    socket.emit(EVENT.CLIENT_UPDATE_DRAWING, payload);
   };
 
   const updateDrawing = ({ mouse, prevMouse, size }) => {
@@ -119,6 +146,17 @@ const Room = ({ username }) => {
             <div key={i} className="player">
               <i className="snes-jp-logo" />{" "}
               <span className="player-name">{p.username}</span>
+              {answerList[i] && (
+                <div className="message -left">
+                  <div
+                    className={`nes-balloon ${
+                      i % 2 === 0 ? "from-left" : "from-right"
+                    }`}
+                  >
+                    <p>{answerList[i]}</p>
+                  </div>
+                </div>
+              )}
             </div>
           );
         }
@@ -133,7 +171,7 @@ const Room = ({ username }) => {
             id="username"
             className="input nes-input"
             value={answer}
-            onChange={e => setAnswer(e.target.value.trim())}
+            onChange={e => setAnswer(e.target.value)}
             placeholder="type answer.."
           />
         </div>
