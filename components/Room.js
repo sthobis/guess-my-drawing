@@ -111,13 +111,14 @@ const Room = ({ username }) => {
         if (!p) {
           return (
             <div key={i} className="player">
-              empty
+              <span className="player-name empty">empty</span>
             </div>
           );
         } else {
           return (
             <div key={i} className="player">
-              {p.username}
+              <i className="snes-jp-logo" />{" "}
+              <span className="player-name">{p.username}</span>
             </div>
           );
         }
@@ -133,6 +134,7 @@ const Room = ({ username }) => {
             className="input nes-input"
             value={answer}
             onChange={e => setAnswer(e.target.value.trim())}
+            placeholder="type answer.."
           />
         </div>
         <input type="submit" hidden />
@@ -147,6 +149,21 @@ const Room = ({ username }) => {
           height: calc(100vh - 60px);
           margin: 30px;
           padding: 20px;
+        }
+
+        .player {
+          display: flex;
+          flex-direction: row;
+          justify-content: flex-start;
+          align-items: center;
+        }
+
+        .player-name {
+          margin: 14px 10px 0 10px;
+        }
+
+        .player:nth-child(2n) {
+          flex-direction: row-reverse;
         }
 
         .player:nth-child(1) {

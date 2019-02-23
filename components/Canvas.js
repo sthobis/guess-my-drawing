@@ -68,7 +68,7 @@ const Canvas = ({ canvasRef, broadcastDrawing }) => {
         .canvas {
           max-width: 100%;
           max-height: 100%;
-          border: 1px solid #000;
+          border: 4px solid #000;
         }
       `}</style>
     </>
