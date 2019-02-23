@@ -22,8 +22,11 @@ const Canvas = ({ canvasRef, broadcastDrawing }) => {
   });
 
   const resizeCanvas = () => {
-    canvasRef.current.width = canvasRef.current.getBoundingClientRect().width;
-    canvasRef.current.height = canvasRef.current.getBoundingClientRect().height;
+    const width = canvasRef.current.getBoundingClientRect().width;
+    const height = canvasRef.current.getBoundingClientRect().height;
+    const size = Math.min(width, height);
+    canvasRef.current.width = size;
+    canvasRef.current.height = size;
   };
   useEffect(() => {
     resizeCanvas();
@@ -43,7 +46,11 @@ const Canvas = ({ canvasRef, broadcastDrawing }) => {
     } else {
       ctx.fillRect(mouse.x, mouse.y, 1, 1);
     }
-    broadcastDrawing({ mouse, prevMouse });
+    broadcastDrawing({
+      mouse,
+      prevMouse,
+      size: canvasRef.current.getBoundingClientRect().width
+    });
     prevMouse.current = mouse;
   };
 
@@ -59,11 +66,8 @@ const Canvas = ({ canvasRef, broadcastDrawing }) => {
       />
       <style jsx>{`
         .canvas {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
+          max-width: 100%;
+          max-height: 100%;
           border: 1px solid #000;
         }
       `}</style>

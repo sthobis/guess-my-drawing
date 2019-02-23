@@ -78,17 +78,29 @@ const Room = ({ username }) => {
     socketRef.current.emit(EVENT.CLIENT_UPDATE_DRAWING, payload);
   };
 
-  const updateDrawing = ({ mouse, prevMouse }) => {
+  const updateDrawing = ({ mouse, prevMouse, size }) => {
     const ctx = canvasRef.current.getContext("2d");
+    const currentSize = canvasRef.current.getBoundingClientRect().width;
     ctx.fillStyle = "#000";
     if (prevMouse.current) {
       ctx.beginPath();
-      ctx.moveTo(prevMouse.current.x, prevMouse.current.y);
-      ctx.lineTo(mouse.x, mouse.y);
+      ctx.moveTo(
+        (prevMouse.current.x * currentSize) / size,
+        (prevMouse.current.y * currentSize) / size
+      );
+      ctx.lineTo(
+        (mouse.x * currentSize) / size,
+        (mouse.y * currentSize) / size
+      );
       ctx.stroke();
       ctx.closePath();
     } else {
-      ctx.fillRect(mouse.x, mouse.y, 1, 1);
+      ctx.fillRect(
+        (mouse.x * currentSize) / size,
+        (mouse.y * currentSize) / size,
+        1,
+        1
+      );
     }
     prevMouse.current = mouse;
   };
@@ -171,7 +183,9 @@ const Room = ({ username }) => {
 
         .canvas-container {
           grid-area: canvas;
-          position: relative;
+          display: flex;
+          justify-content: center;
+          align-items: center;
         }
 
         .input-form {
