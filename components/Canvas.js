@@ -76,6 +76,9 @@ const Canvas = ({ canvasRef, broadcastDrawing }) => {
 };
 
 Canvas.propTypes = {
+  canvasRef: PropTypes.shape({
+    current: PropTypes.any
+  }),
   broadcastDrawing: PropTypes.func.isRequired
 };
 
