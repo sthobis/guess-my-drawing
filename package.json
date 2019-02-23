@@ -9,7 +9,10 @@
   },
   "dependencies": {
     "next": "latest",
+    "prop-types": "^15.7.2",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "socket.io-client": "^2.2.0",
+    "uuid": "^3.3.2"
   }
 }
