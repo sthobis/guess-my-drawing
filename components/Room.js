@@ -1,9 +1,18 @@
+import Router from "next/router";
 import PropTypes from "prop-types";
 import { useEffect, useRef, useState } from "react";
 import io from "socket.io-client";
 import { useImmer } from "use-immer";
 import uuidv4 from "uuid/v4";
 import Canvas from "./Canvas";
+import PlayerList from "./PlayerList";
+
+const url =
+  process.env.NODE_ENV === "development"
+    ? "http://localhost:3004"
+    : "https://gmd.duajarimanis.com";
+const socket = io(url);
+const id = uuidv4();
 
 const EVENT = {
   CONNECT: "connect",
@@ -23,20 +32,18 @@ const EVENT = {
   ROUND_ENDED_WITHOUT_WINNER: "round_ended_without_winner"
 };
 
-const url =
-  process.env.NODE_ENV === "development"
-    ? "http://localhost:3004"
-    : "https://gmd.duajarimanis.com";
-const socket = io(url);
-const id = uuidv4();
-
 const Room = ({ username }) => {
   const canvasRef = useRef();
 
-  const player = {
-    id,
-    username
-  };
+  const [player, setPlayer] = useState({ id, username });
+  useEffect(() => {
+    setPlayer({
+      id,
+      username
+    });
+  }, [username]);
+
+  const [drawer, setDrawer] = useState({});
 
   useEffect(() => {
     joinRoom();
@@ -44,6 +51,11 @@ const Room = ({ username }) => {
       socket.close();
     };
   }, []);
+
+  const joinRoom = () => {
+    socket.emit(EVENT.CLIENT_JOIN_ROOM, player, updatePlayerList);
+  };
+
   useEffect(() => {
     socket.on(EVENT.CONNECT_ERROR, handleError);
     socket.on(EVENT.SERVER_JOIN_ERROR, handleError);
@@ -66,18 +78,11 @@ const Room = ({ username }) => {
     };
   });
 
-  const joinRoom = () => {
-    socket.emit(EVENT.CLIENT_JOIN_ROOM, player, updatePlayerList);
+  const handleError = err => {
+    console.log(err);
+    alert(err);
+    Router.replace("/");
   };
-
-  const [drawer, setDrawer] = useState({});
-  const startRound = drawer => {
-    setDrawer(drawer);
-    const ctx = canvasRef.current.getContext("2d");
-    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-  };
-
-  const finishRound = winner => {};
 
   const [playerList, setPlayerList] = useState(Array(8).fill(null));
   const updatePlayerList = players => {
@@ -97,26 +102,6 @@ const Room = ({ username }) => {
         draft[playerIndex] = null;
       });
     }, 3000);
-  };
-
-  const handleError = err => {
-    console.log(err);
-    alert(err);
-    socket.close();
-  };
-
-  const [answer, setAnswer] = useState("");
-  const submitAnswer = e => {
-    e.preventDefault();
-    if (player.id === drawer.id) return;
-
-    const payload = {
-      player,
-      message: answer
-    };
-    socket.emit(EVENT.CLIENT_SUBMIT_ANSWER, payload);
-    popNewAnswer(payload);
-    setAnswer("");
   };
 
   const broadcastDrawing = payload => {
@@ -150,35 +135,35 @@ const Room = ({ username }) => {
     prevMouse.current = mouse;
   };
 
+  const [answerInput, setAnswerInput] = useState("");
+  const submitAnswer = e => {
+    e.preventDefault();
+    if (player.id === drawer.id) return;
+
+    const payload = {
+      player,
+      message: answerInput
+    };
+    socket.emit(EVENT.CLIENT_SUBMIT_ANSWER, payload);
+    popNewAnswer(payload);
+    setAnswerInput("");
+  };
+
+  const startRound = drawer => {
+    setDrawer(drawer);
+    const ctx = canvasRef.current.getContext("2d");
+    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+  };
+
+  const finishRound = payload => {};
+
   return (
     <div className="room nes-container is-rounded">
-      {playerList.map((p, i) => {
-        if (!p) {
-          return (
-            <div key={i} className="player">
-              <span className="player-name nes-text is-disabled">{`insert coin`}</span>
-            </div>
-          );
-        } else {
-          return (
-            <div key={i} className="player">
-              {drawer.id === p.id && <i className="snes-jp-logo" />}
-              <span className="player-name">{p.username}</span>
-              {answerList[i] && (
-                <div className="message">
-                  <div
-                    className={`nes-balloon ${
-                      i % 2 === 0 ? "from-left" : "from-right"
-                    }`}
-                  >
-                    <p>{answerList[i]}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        }
-      })}
+      <PlayerList
+        playerList={playerList}
+        answerList={answerList}
+        drawer={drawer}
+      />
       <div className="canvas-container">
         <Canvas
           canvasRef={canvasRef}
@@ -192,8 +177,8 @@ const Room = ({ username }) => {
             type="text"
             id="username"
             className="input nes-input"
-            value={answer}
-            onChange={e => setAnswer(e.target.value.substr(0, 20))}
+            value={answerInput}
+            onChange={e => setAnswerInput(e.target.value.substr(0, 20))}
             placeholder="type answer.. (20 chars max)"
             disabled={player.id === drawer.id}
             autoComplete="off"
@@ -211,62 +196,6 @@ const Room = ({ username }) => {
           height: calc(100vh - 60px);
           margin: 30px;
           padding: 20px;
-        }
-
-        .player {
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-          text-align: center;
-          position: relative;
-        }
-
-        .player-name {
-          margin: 14px 10px 0 10px;
-        }
-
-        .message {
-          position: absolute;
-          left: 100%;
-          top: 0;
-        }
-
-        .player:nth-child(2n) .message {
-          left: auto;
-          right: 100%;
-        }
-
-        .player:nth-child(1) {
-          grid-area: p1;
-        }
-
-        .player:nth-child(2) {
-          grid-area: p2;
-        }
-
-        .player:nth-child(3) {
-          grid-area: p3;
-        }
-
-        .player:nth-child(4) {
-          grid-area: p4;
-        }
-
-        .player:nth-child(5) {
-          grid-area: p5;
-        }
-
-        .player:nth-child(6) {
-          grid-area: p6;
-        }
-
-        .player:nth-child(7) {
-          grid-area: p7;
-        }
-
-        .player:nth-child(8) {
-          grid-area: p8;
         }
 
         .canvas-container {
