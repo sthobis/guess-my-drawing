@@ -17,7 +17,10 @@ const EVENT = {
   CLIENT_UPDATE_DRAWING: "client_update_drawing",
   SERVER_JOIN_ERROR: "server_join_error",
   SERVER_UPDATE_PLAYER_LIST: "server_update_player_list",
-  SERVER_NEW_ANSWER: "server_new_answer"
+  SERVER_NEW_ANSWER: "server_new_answer",
+  ROUND_START: "round_start",
+  ROUND_ENDED_WITH_WINNER: "round_ended_with_winner",
+  ROUND_ENDED_WITHOUT_WINNER: "round_ended_without_winner"
 };
 
 const url =
@@ -42,26 +45,39 @@ const Room = ({ username }) => {
     };
   }, []);
   useEffect(() => {
-    socket.on(EVENT.CONNECT, joinRoom);
     socket.on(EVENT.CONNECT_ERROR, handleError);
     socket.on(EVENT.SERVER_JOIN_ERROR, handleError);
     socket.on(EVENT.SERVER_UPDATE_PLAYER_LIST, updatePlayerList);
     socket.on(EVENT.SERVER_NEW_ANSWER, popNewAnswer);
     socket.on(EVENT.CLIENT_UPDATE_DRAWING, updateDrawing);
+    socket.on(EVENT.ROUND_START, startRound);
+    socket.on(EVENT.ROUND_ENDED_WITH_WINNER, finishRound);
+    socket.on(EVENT.ROUND_ENDED_WITHOUT_WINNER, finishRound);
 
     return () => {
-      socket.off(EVENT.CONNECT, joinRoom);
       socket.off(EVENT.CONNECT_ERROR, handleError);
       socket.off(EVENT.SERVER_JOIN_ERROR, handleError);
       socket.off(EVENT.SERVER_UPDATE_PLAYER_LIST, updatePlayerList);
       socket.off(EVENT.SERVER_NEW_ANSWER, popNewAnswer);
       socket.off(EVENT.CLIENT_UPDATE_DRAWING, updateDrawing);
+      socket.off(EVENT.ROUND_START, startRound);
+      socket.off(EVENT.ROUND_ENDED_WITH_WINNER, finishRound);
+      socket.off(EVENT.ROUND_ENDED_WITHOUT_WINNER, finishRound);
     };
   });
 
   const joinRoom = () => {
     socket.emit(EVENT.CLIENT_JOIN_ROOM, player, updatePlayerList);
   };
+
+  const [drawer, setDrawer] = useState(null);
+  const startRound = drawer => {
+    console.log(drawer);
+    console.log(player);
+    setDrawer(drawer);
+  };
+
+  const finishRound = winner => {};
 
   const [playerList, setPlayerList] = useState(Array(8).fill(null));
   const updatePlayerList = players => {
@@ -138,13 +154,13 @@ const Room = ({ username }) => {
         if (!p) {
           return (
             <div key={i} className="player">
-              <span className="player-name empty">empty</span>
+              <span className="player-name empty">{`<insert coin>`}</span>
             </div>
           );
         } else {
           return (
             <div key={i} className="player">
-              <i className="snes-jp-logo" />{" "}
+              {drawer && drawer.id === p.id && <i className="snes-jp-logo" />}
               <span className="player-name">{p.username}</span>
               {answerList[i] && (
                 <div className="message -left">
