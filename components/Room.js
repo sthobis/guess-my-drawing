@@ -180,14 +180,16 @@ const Room = ({ username }) => {
   };
 
   const finishRound = payload => {
-    if (!payload) {
-      setLoggerText(`Oops! Round ended without anyone be able to answer!`);
-    } else {
-      setLoggerText(
-        `${payload.player.username} guessed correctly! The answer is "${
-          payload.message
-        }"`
-      );
+    if (playerList.filter(p => p !== null).length >= 2) {
+      if (!payload) {
+        setLoggerText(`Oops! Round ended without anyone be able to answer!`);
+      } else {
+        setLoggerText(
+          `${payload.player.username} guessed correctly! The answer is "${
+            payload.message
+          }"`
+        );
+      }
     }
   };
 
