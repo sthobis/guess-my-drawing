@@ -2,13 +2,15 @@ import PropTypes from "prop-types";
 import { useEffect, useRef, useState } from "react";
 import useMousePosition from "../lib/useMousePosition";
 
-const Canvas = ({ canvasRef, broadcastDrawing }) => {
+const Canvas = ({ canvasRef, broadcastDrawing, disabled }) => {
   const mouse = useMousePosition(canvasRef);
   const prevMouse = useRef(null);
 
   const [isDrawing, setIsDrawing] = useState(false);
   const startDrawing = e => {
-    setIsDrawing(true);
+    if (!disabled) {
+      setIsDrawing(true);
+    }
   };
   const stopDrawing = e => {
     setIsDrawing(false);
@@ -16,8 +18,13 @@ const Canvas = ({ canvasRef, broadcastDrawing }) => {
   };
   useEffect(() => {
     if (isDrawing) {
-      // console.log(mouse.x + ", " + mouse.y);
       drawCanvas();
+      broadcastDrawing({
+        mouse,
+        prevMouse,
+        size: canvasRef.current.getBoundingClientRect().width
+      });
+      prevMouse.current = mouse;
     }
   });
 
@@ -46,12 +53,6 @@ const Canvas = ({ canvasRef, broadcastDrawing }) => {
     } else {
       ctx.fillRect(mouse.x, mouse.y, 1, 1);
     }
-    broadcastDrawing({
-      mouse,
-      prevMouse,
-      size: canvasRef.current.getBoundingClientRect().width
-    });
-    prevMouse.current = mouse;
   };
 
   return (
@@ -79,7 +80,8 @@ Canvas.propTypes = {
   canvasRef: PropTypes.shape({
     current: PropTypes.any
   }),
-  broadcastDrawing: PropTypes.func.isRequired
+  broadcastDrawing: PropTypes.func.isRequired,
+  disabled: PropTypes.bool.isRequired
 };
 
 export default Canvas;

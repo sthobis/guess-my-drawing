@@ -70,10 +70,8 @@ const Room = ({ username }) => {
     socket.emit(EVENT.CLIENT_JOIN_ROOM, player, updatePlayerList);
   };
 
-  const [drawer, setDrawer] = useState(null);
+  const [drawer, setDrawer] = useState({});
   const startRound = drawer => {
-    console.log(drawer);
-    console.log(player);
     setDrawer(drawer);
   };
 
@@ -108,6 +106,8 @@ const Room = ({ username }) => {
   const [answer, setAnswer] = useState("");
   const submitAnswer = e => {
     e.preventDefault();
+    if (player.id === drawer.id) return;
+
     const payload = {
       player,
       message: answer
@@ -160,7 +160,7 @@ const Room = ({ username }) => {
         } else {
           return (
             <div key={i} className="player">
-              {drawer && drawer.id === p.id && <i className="snes-jp-logo" />}
+              {drawer.id === p.id && <i className="snes-jp-logo" />}
               <span className="player-name">{p.username}</span>
               {answerList[i] && (
                 <div className="message -left">
@@ -178,7 +178,11 @@ const Room = ({ username }) => {
         }
       })}
       <div className="canvas-container">
-        <Canvas canvasRef={canvasRef} broadcastDrawing={broadcastDrawing} />
+        <Canvas
+          canvasRef={canvasRef}
+          broadcastDrawing={broadcastDrawing}
+          disabled={player.id !== drawer.id}
+        />
       </div>
       <form className="input-form" onSubmit={submitAnswer}>
         <div className="input-box nes-field">
@@ -189,6 +193,7 @@ const Room = ({ username }) => {
             value={answer}
             onChange={e => setAnswer(e.target.value)}
             placeholder="type answer.."
+            disabled={player.id === drawer.id}
           />
         </div>
         <input type="submit" hidden />
