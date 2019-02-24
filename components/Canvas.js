@@ -61,7 +61,7 @@ const Canvas = ({ canvasRef, broadcastDrawing, disabled }) => {
         ref={canvasRef}
         width="1000"
         height="1000"
-        className="canvas"
+        className={`canvas ${disabled ? "" : "active"}`}
         onMouseDown={startDrawing}
         onMouseUp={stopDrawing}
         onMouseOut={stopDrawing}
@@ -71,6 +71,10 @@ const Canvas = ({ canvasRef, broadcastDrawing, disabled }) => {
           max-width: 100%;
           max-height: 100%;
           border: 4px solid #000;
+        }
+
+        .active {
+          border-color: #209cee;
         }
       `}</style>
     </>

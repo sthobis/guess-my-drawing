@@ -37,6 +37,7 @@ const PlayerList = ({ playerList, answerList, drawer }) => (
         align-items: center;
         text-align: center;
         position: relative;
+        z-index: 10;
       }
 
       .player-name {

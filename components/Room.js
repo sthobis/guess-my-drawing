@@ -11,7 +11,9 @@ const url =
   process.env.NODE_ENV === "development"
     ? "http://localhost:3004"
     : "https://gmd.duajarimanis.com";
-const socket = io(url);
+const socket = io(url, {
+  autoConnect: false
+});
 const id = uuidv4();
 
 const EVENT = {
@@ -23,6 +25,7 @@ const EVENT = {
   UPDATE_DRAWING: "update_drawing",
   UPDATE_PLAYER_LIST: "update_player_list",
   UPDATE_ANSWER_LIST: "update_answer_list",
+  ROUND_ANSWER: "round_answer",
   ROUND_START: "round_start",
   ROUND_ENDED_WITH_WINNER: "round_ended_with_winner",
   ROUND_ENDED_WITHOUT_WINNER: "round_ended_without_winner"
@@ -40,8 +43,10 @@ const Room = ({ username }) => {
   }, [username]);
 
   const [drawer, setDrawer] = useState({});
+  const [loggerText, setLoggerText] = useState("waiting for 1 more players..");
 
   useEffect(() => {
+    socket.connect();
     joinRoom();
     return () => {
       socket.close();
@@ -56,8 +61,9 @@ const Room = ({ username }) => {
     socket.on(EVENT.CONNECT_ERROR, handleError);
     socket.on(EVENT.JOIN_ROOM_ERROR, handleError);
     socket.on(EVENT.UPDATE_PLAYER_LIST, updatePlayerList);
-    socket.on(EVENT.UPDATE_ANSWER_LIST, showNewAnswer);
+    socket.on(EVENT.UPDATE_ANSWER_LIST, showDialog);
     socket.on(EVENT.UPDATE_DRAWING, updateDrawing);
+    socket.on(EVENT.ROUND_ANSWER, prepareRound);
     socket.on(EVENT.ROUND_START, startRound);
     socket.on(EVENT.ROUND_ENDED_WITH_WINNER, finishRound);
     socket.on(EVENT.ROUND_ENDED_WITHOUT_WINNER, finishRound);
@@ -66,8 +72,9 @@ const Room = ({ username }) => {
       socket.off(EVENT.CONNECT_ERROR, handleError);
       socket.off(EVENT.JOIN_ROOM_ERROR, handleError);
       socket.off(EVENT.UPDATE_PLAYER_LIST, updatePlayerList);
-      socket.off(EVENT.UPDATE_ANSWER_LIST, showNewAnswer);
+      socket.off(EVENT.UPDATE_ANSWER_LIST, showDialog);
       socket.off(EVENT.UPDATE_DRAWING, updateDrawing);
+      socket.off(EVENT.ROUND_ANSWER, prepareRound);
       socket.off(EVENT.ROUND_START, startRound);
       socket.off(EVENT.ROUND_ENDED_WITH_WINNER, finishRound);
       socket.off(EVENT.ROUND_ENDED_WITHOUT_WINNER, finishRound);
@@ -77,16 +84,21 @@ const Room = ({ username }) => {
   const handleError = err => {
     console.log(err);
     alert(err);
-    Router.replace("/");
+    Router.push("/");
   };
 
   const [playerList, setPlayerList] = useState(Array(8).fill(null));
   const updatePlayerList = players => {
     setPlayerList(players);
+    if (players.filter(p => p !== null).length === 1) {
+      setLoggerText("waiting for 1 more players..");
+    } else {
+      setLoggerText("waiting for next round..");
+    }
   };
 
   const [answerList, setAnswerList] = useImmer(Array(8).fill(null));
-  const showNewAnswer = payload => {
+  const showDialog = payload => {
     const playerIndex = playerList.findIndex(
       p => p && p.id === payload.player.id
     );
@@ -141,17 +153,43 @@ const Room = ({ username }) => {
       message: answerInput
     };
     socket.emit(EVENT.SUBMIT_ANSWER, payload);
-    showNewAnswer(payload);
+    showDialog(payload);
     setAnswerInput("");
   };
 
+  const [answer, setAnswer] = useState("");
+  const prepareRound = payload => {
+    setAnswer(payload);
+    showDialog({
+      player,
+      message: `Let's draw "${payload}"!`
+    });
+  };
+
   const startRound = drawer => {
+    setLoggerText("");
     setDrawer(drawer);
+    if (player.id !== drawer.id) {
+      showDialog({
+        player: drawer,
+        message: "I'm drawing!"
+      });
+    }
     const ctx = canvasRef.current.getContext("2d");
     ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
   };
 
-  const finishRound = payload => {};
+  const finishRound = payload => {
+    if (!payload) {
+      setLoggerText(`Oops! Round ended without anyone be able to answer!`);
+    } else {
+      setLoggerText(
+        `${payload.player.username} guessed correctly! The answer is "${
+          payload.message
+        }"`
+      );
+    }
+  };
 
   return (
     <div className="room nes-container is-rounded">
@@ -166,6 +204,11 @@ const Room = ({ username }) => {
           broadcastDrawing={broadcastDrawing}
           disabled={player.id !== drawer.id}
         />
+        {loggerText && (
+          <div className="logger nes-container is-rounded is-dark">
+            <p>{loggerText}</p>
+          </div>
+        )}
       </div>
       <form className="input-form" onSubmit={submitAnswer}>
         <div className="input-box nes-field">
@@ -175,7 +218,11 @@ const Room = ({ username }) => {
             className="input nes-input"
             value={answerInput}
             onChange={e => setAnswerInput(e.target.value.substr(0, 20))}
-            placeholder="type answer.. (20 chars max)"
+            placeholder={
+              player.id === drawer.id
+                ? `it's your turn to draw! draw "${answer}"`
+                : "type answer.. (20 chars max)"
+            }
             disabled={player.id === drawer.id}
             autoComplete="off"
           />
@@ -199,6 +246,14 @@ const Room = ({ username }) => {
           display: flex;
           justify-content: center;
           align-items: center;
+          position: relative;
+        }
+
+        .logger {
+          position: absolute;
+          left: 25%;
+          right: 25%;
+          text-align: center;
         }
 
         .input-form {
