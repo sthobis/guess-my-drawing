@@ -15,18 +15,14 @@ const socket = io(url);
 const id = uuidv4();
 
 const EVENT = {
-  CONNECT: "connect",
   CONNECT_ERROR: "connect_error",
-  DISCONNECT: "disconnect",
-  DISCONNECTING: "disconnecting",
-  GENERAL_ERROR: "general_error",
-  CLIENT_JOIN_ROOM: "client_join_room",
-  CLIENT_LEAVE_ROOM: "client_leave_room",
-  CLIENT_SUBMIT_ANSWER: "client_submit_answer",
-  CLIENT_UPDATE_DRAWING: "client_update_drawing",
-  SERVER_JOIN_ERROR: "server_join_error",
-  SERVER_UPDATE_PLAYER_LIST: "server_update_player_list",
-  SERVER_NEW_ANSWER: "server_new_answer",
+  JOIN_ROOM: "join_room",
+  JOIN_ROOM_ERROR: "join_room_error",
+  LEAVE_ROOM: "leave_room",
+  SUBMIT_ANSWER: "submit_answer",
+  UPDATE_DRAWING: "update_drawing",
+  UPDATE_PLAYER_LIST: "update_player_list",
+  UPDATE_ANSWER_LIST: "update_answer_list",
   ROUND_START: "round_start",
   ROUND_ENDED_WITH_WINNER: "round_ended_with_winner",
   ROUND_ENDED_WITHOUT_WINNER: "round_ended_without_winner"
@@ -53,25 +49,25 @@ const Room = ({ username }) => {
   }, []);
 
   const joinRoom = () => {
-    socket.emit(EVENT.CLIENT_JOIN_ROOM, player, updatePlayerList);
+    socket.emit(EVENT.JOIN_ROOM, player, updatePlayerList);
   };
 
   useEffect(() => {
     socket.on(EVENT.CONNECT_ERROR, handleError);
-    socket.on(EVENT.SERVER_JOIN_ERROR, handleError);
-    socket.on(EVENT.SERVER_UPDATE_PLAYER_LIST, updatePlayerList);
-    socket.on(EVENT.SERVER_NEW_ANSWER, popNewAnswer);
-    socket.on(EVENT.CLIENT_UPDATE_DRAWING, updateDrawing);
+    socket.on(EVENT.JOIN_ROOM_ERROR, handleError);
+    socket.on(EVENT.UPDATE_PLAYER_LIST, updatePlayerList);
+    socket.on(EVENT.UPDATE_ANSWER_LIST, showNewAnswer);
+    socket.on(EVENT.UPDATE_DRAWING, updateDrawing);
     socket.on(EVENT.ROUND_START, startRound);
     socket.on(EVENT.ROUND_ENDED_WITH_WINNER, finishRound);
     socket.on(EVENT.ROUND_ENDED_WITHOUT_WINNER, finishRound);
 
     return () => {
       socket.off(EVENT.CONNECT_ERROR, handleError);
-      socket.off(EVENT.SERVER_JOIN_ERROR, handleError);
-      socket.off(EVENT.SERVER_UPDATE_PLAYER_LIST, updatePlayerList);
-      socket.off(EVENT.SERVER_NEW_ANSWER, popNewAnswer);
-      socket.off(EVENT.CLIENT_UPDATE_DRAWING, updateDrawing);
+      socket.off(EVENT.JOIN_ROOM_ERROR, handleError);
+      socket.off(EVENT.UPDATE_PLAYER_LIST, updatePlayerList);
+      socket.off(EVENT.UPDATE_ANSWER_LIST, showNewAnswer);
+      socket.off(EVENT.UPDATE_DRAWING, updateDrawing);
       socket.off(EVENT.ROUND_START, startRound);
       socket.off(EVENT.ROUND_ENDED_WITH_WINNER, finishRound);
       socket.off(EVENT.ROUND_ENDED_WITHOUT_WINNER, finishRound);
@@ -90,7 +86,7 @@ const Room = ({ username }) => {
   };
 
   const [answerList, setAnswerList] = useImmer(Array(8).fill(null));
-  const popNewAnswer = payload => {
+  const showNewAnswer = payload => {
     const playerIndex = playerList.findIndex(
       p => p && p.id === payload.player.id
     );
@@ -105,7 +101,7 @@ const Room = ({ username }) => {
   };
 
   const broadcastDrawing = payload => {
-    socket.emit(EVENT.CLIENT_UPDATE_DRAWING, payload);
+    socket.emit(EVENT.UPDATE_DRAWING, payload);
   };
 
   const updateDrawing = ({ mouse, prevMouse, size }) => {
@@ -144,8 +140,8 @@ const Room = ({ username }) => {
       player,
       message: answerInput
     };
-    socket.emit(EVENT.CLIENT_SUBMIT_ANSWER, payload);
-    popNewAnswer(payload);
+    socket.emit(EVENT.SUBMIT_ANSWER, payload);
+    showNewAnswer(payload);
     setAnswerInput("");
   };
 

@@ -47,6 +47,7 @@ const PlayerList = ({ playerList, answerList, drawer }) => (
         position: absolute;
         left: 100%;
         top: 0;
+        pointer-events: none;
       }
 
       .player:nth-child(2n) .message {
