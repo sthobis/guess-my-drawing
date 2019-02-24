@@ -16,7 +16,8 @@ const Menu = () => {
           id="username"
           className={`nes-input ${username ? "is-success" : "is-error"}`}
           value={username}
-          onChange={e => setUsername(e.target.value)}
+          placeholder="12 chars max"
+          onChange={e => setUsername(e.target.value.substr(0, 8))}
         />
       </div>
       <Link href={`/room?u=${username}`} prefetch>

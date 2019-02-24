@@ -73,6 +73,8 @@ const Room = ({ username }) => {
   const [drawer, setDrawer] = useState({});
   const startRound = drawer => {
     setDrawer(drawer);
+    const ctx = canvasRef.current.getContext("2d");
+    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
   };
 
   const finishRound = winner => {};
@@ -154,7 +156,7 @@ const Room = ({ username }) => {
         if (!p) {
           return (
             <div key={i} className="player">
-              <span className="player-name empty">{`<insert coin>`}</span>
+              <span className="player-name nes-text is-disabled">{`insert coin`}</span>
             </div>
           );
         } else {
@@ -163,7 +165,7 @@ const Room = ({ username }) => {
               {drawer.id === p.id && <i className="snes-jp-logo" />}
               <span className="player-name">{p.username}</span>
               {answerList[i] && (
-                <div className="message -left">
+                <div className="message">
                   <div
                     className={`nes-balloon ${
                       i % 2 === 0 ? "from-left" : "from-right"
@@ -191,9 +193,10 @@ const Room = ({ username }) => {
             id="username"
             className="input nes-input"
             value={answer}
-            onChange={e => setAnswer(e.target.value)}
-            placeholder="type answer.."
+            onChange={e => setAnswer(e.target.value.substr(0, 20))}
+            placeholder="type answer.. (20 chars max)"
             disabled={player.id === drawer.id}
+            autoComplete="off"
           />
         </div>
         <input type="submit" hidden />
@@ -201,7 +204,7 @@ const Room = ({ username }) => {
       <style jsx>{`
         .room {
           display: grid;
-          grid-template-columns: 300px auto 300px;
+          grid-template-columns: 200px auto 200px;
           grid-template-rows: 1fr 1fr 1fr 1fr 70px;
           grid-template-areas: "p1 canvas p2" "p3 canvas p4" "p5 canvas p6" "p7 canvas p8" "input input input";
           width: calc(100vw - 60px);
@@ -212,17 +215,26 @@ const Room = ({ username }) => {
 
         .player {
           display: flex;
-          flex-direction: row;
-          justify-content: flex-start;
+          flex-direction: column;
+          justify-content: center;
           align-items: center;
+          text-align: center;
+          position: relative;
         }
 
         .player-name {
           margin: 14px 10px 0 10px;
         }
 
-        .player:nth-child(2n) {
-          flex-direction: row-reverse;
+        .message {
+          position: absolute;
+          left: 100%;
+          top: 0;
+        }
+
+        .player:nth-child(2n) .message {
+          left: auto;
+          right: 100%;
         }
 
         .player:nth-child(1) {

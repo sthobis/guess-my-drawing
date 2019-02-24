@@ -64,6 +64,7 @@ const Canvas = ({ canvasRef, broadcastDrawing, disabled }) => {
         className="canvas"
         onMouseDown={startDrawing}
         onMouseUp={stopDrawing}
+        onMouseOut={stopDrawing}
       />
       <style jsx>{`
         .canvas {
