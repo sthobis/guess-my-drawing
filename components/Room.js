@@ -10,7 +10,7 @@ import PlayerList from "./PlayerList";
 const url =
   process.env.NODE_ENV === "development"
     ? "http://localhost:3004"
-    : "https://gmd.duajarimanis.com";
+    : "https://gmd-api.sthobis.com";
 const socket = io(url, {
   autoConnect: false
 });
@@ -185,9 +185,7 @@ const Room = ({ username }) => {
         setLoggerText(`Oops! Round ended without anyone be able to answer!`);
       } else {
         setLoggerText(
-          `${payload.player.username} guessed correctly! The answer is "${
-            payload.message
-          }"`
+          `${payload.player.username} guessed correctly! The answer is "${payload.message}"`
         );
       }
     }
