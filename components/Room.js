@@ -55,9 +55,7 @@ const Room = ({ username }) => {
   }, []);
 
   const joinRoom = () => {
-    console.log("isConnecting1: " + isConnecting);
     socket.emit(EVENT.JOIN_ROOM, player, handleJoinRoom);
-    console.log("isConnecting2: " + isConnecting);
   };
 
   useEffect(() => {
@@ -68,8 +66,8 @@ const Room = ({ username }) => {
     socket.on(EVENT.UPDATE_DRAWING, updateDrawing);
     socket.on(EVENT.ROUND_ANSWER, prepareRound);
     socket.on(EVENT.ROUND_START, startRound);
-    socket.on(EVENT.ROUND_ENDED_WITH_WINNER, finishRound);
-    socket.on(EVENT.ROUND_ENDED_WITHOUT_WINNER, finishRound);
+    socket.on(EVENT.ROUND_ENDED_WITH_WINNER, finishRoundWithWinner);
+    socket.on(EVENT.ROUND_ENDED_WITHOUT_WINNER, finishRoundWithoutWinner);
 
     return () => {
       socket.off(EVENT.CONNECT_ERROR, handleError);
@@ -79,14 +77,14 @@ const Room = ({ username }) => {
       socket.off(EVENT.UPDATE_DRAWING, updateDrawing);
       socket.off(EVENT.ROUND_ANSWER, prepareRound);
       socket.off(EVENT.ROUND_START, startRound);
-      socket.off(EVENT.ROUND_ENDED_WITH_WINNER, finishRound);
-      socket.off(EVENT.ROUND_ENDED_WITHOUT_WINNER, finishRound);
+      socket.off(EVENT.ROUND_ENDED_WITH_WINNER, finishRoundWithWinner);
+      socket.off(EVENT.ROUND_ENDED_WITHOUT_WINNER, finishRoundWithoutWinner);
     };
   });
 
   const handleError = err => {
     console.log(err);
-    alert(err);
+    alert(err.message);
     Router.push("/");
   };
 
@@ -187,17 +185,21 @@ const Room = ({ username }) => {
     ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
   };
 
-  const finishRound = payload => {
+  const finishRoundWithWinner = payload => {
     if (playerList.filter(p => p !== null).length >= 2) {
-      if (!payload) {
-        setLoggerText(`Oops! Round ended without anyone be able to answer!`);
-      } else {
-        setLoggerText(
-          `${payload.player.username} guessed correctly! The answer is "${
-            payload.message
-          }"`
-        );
-      }
+      setLoggerText(
+        `${payload.player.username} guessed correctly! The answer is "${
+          payload.message
+        }"`
+      );
+    }
+  };
+
+  const finishRoundWithoutWinner = answer => {
+    if (playerList.filter(p => p !== null).length >= 2) {
+      setLoggerText(
+        `Oops! Round ended without anyone be able to answer! The correct answer is "${answer}"`
+      );
     }
   };
 
