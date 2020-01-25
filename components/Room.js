@@ -9,7 +9,7 @@ import PlayerList from "./PlayerList";
 
 const url =
   process.env.NODE_ENV === "development"
-    ? "http://localhost:3004"
+    ? "https://wdtju.sse.codesandbox.io/"
     : "https://gmd-api.sthobis.com";
 const socket = io(url, {
   autoConnect: false
@@ -44,6 +44,7 @@ const Room = ({ username }) => {
 
   const [drawer, setDrawer] = useState({});
   const [loggerText, setLoggerText] = useState("waiting for 1 more players..");
+  const [isConnecting, setIsConnecting] = useState(true);
 
   useEffect(() => {
     socket.connect();
@@ -54,7 +55,9 @@ const Room = ({ username }) => {
   }, []);
 
   const joinRoom = () => {
-    socket.emit(EVENT.JOIN_ROOM, player, updatePlayerList);
+    console.log("isConnecting1: " + isConnecting);
+    socket.emit(EVENT.JOIN_ROOM, player, handleJoinRoom);
+    console.log("isConnecting2: " + isConnecting);
   };
 
   useEffect(() => {
@@ -85,6 +88,11 @@ const Room = ({ username }) => {
     console.log(err);
     alert(err);
     Router.push("/");
+  };
+
+  const handleJoinRoom = players => {
+    updatePlayerList(players);
+    setIsConnecting(false);
   };
 
   const [playerList, setPlayerList] = useState(Array(8).fill(null));
@@ -185,7 +193,9 @@ const Room = ({ username }) => {
         setLoggerText(`Oops! Round ended without anyone be able to answer!`);
       } else {
         setLoggerText(
-          `${payload.player.username} guessed correctly! The answer is "${payload.message}"`
+          `${payload.player.username} guessed correctly! The answer is "${
+            payload.message
+          }"`
         );
       }
     }
@@ -229,6 +239,13 @@ const Room = ({ username }) => {
         </div>
         <input type="submit" hidden />
       </form>
+      {isConnecting && (
+        <div className="overlay">
+          <div className="logger nes-container is-rounded is-dark">
+            <p>Loading...</p>
+          </div>
+        </div>
+      )}
       <style jsx>{`
         .room {
           display: grid;
@@ -254,6 +271,19 @@ const Room = ({ username }) => {
           left: 25%;
           right: 25%;
           text-align: center;
+        }
+
+        .overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          background-color: #ffffff;
+          z-index: 11;
         }
 
         .input-form {
